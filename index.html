@@ -228,8 +228,10 @@ function drawBlock(x, y, color) {
 //    }
 // ============================================================
 function initBoard() {
-  // TODO: 여기에 구현하세요
-
+  board = [];
+  for (let r = 0; r < ROWS; r++) {
+    board.push(new Array(COLS).fill(null));
+  }
 }
 
 // ============================================================
@@ -247,10 +249,16 @@ function initBoard() {
 //    중앙 x = Math.floor((COLS - shape[0].length) / 2)
 // ============================================================
 function createPiece() {
-  // TODO: 여기에 구현하세요
+  const type = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
+  const shape = SHAPES[type].map(row => row.slice());
 
+  currentPiece = {
+    shape: shape,
+    color: COLORS[type],
+    x: Math.floor((COLS - shape[0].length) / 2),
+    y: 0
+  };
 }
-
 // ============================================================
 //  TODO 3: isCollision(piece, dx, dy)
 //  ─────────────────────────────────────────────────────────
@@ -267,10 +275,23 @@ function createPiece() {
 //    값이 1인 칸의 실제 보드 좌표 = (piece.x + col + dx, piece.y + row + dy)
 // ============================================================
 function isCollision(piece, dx, dy) {
-  // TODO: 여기에 구현하세요
+  for (let row = 0; row < piece.shape.length; row++) {
+    for (let col = 0; col < piece.shape[row].length; col++) {
+      if (piece.shape[row][col]) {
+        const newX = piece.x + col + dx;
+        const newY = piece.y + row + dy;
 
+        if (newX < 0 || newX >= COLS) return true;
+        if (newY >= ROWS) return true;
+
+        if (newY >= 0 && board[newY][newX] !== null) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
-
 // ============================================================
 //  TODO 4: rotate(shape)
 //  ─────────────────────────────────────────────────────────
@@ -289,10 +310,20 @@ function isCollision(piece, dx, dy) {
 //    결과 배열 크기는 cols × rows (가로·세로 뒤바뀜)
 // ============================================================
 function rotate(shape) {
-  // TODO: 여기에 구현하세요
+  const rows = shape.length;
+  const cols = shape[0].length;
+  const rotated = [];
 
+  for (let c = 0; c < cols; c++) {
+    const newRow = [];
+    for (let r = rows - 1; r >= 0; r--) {
+      newRow.push(shape[r][c]);
+    }
+    rotated.push(newRow);
+  }
+
+  return rotated;
 }
-
 // ============================================================
 //  TODO 5: placePiece()
 //  ─────────────────────────────────────────────────────────
@@ -301,8 +332,18 @@ function rotate(shape) {
 //  board[y][x] = currentPiece.color 로 설정하세요.
 // ============================================================
 function placePiece() {
-  // TODO: 여기에 구현하세요
+  for (let row = 0; row < currentPiece.shape.length; row++) {
+    for (let col = 0; col < currentPiece.shape[row].length; col++) {
+      if (currentPiece.shape[row][col]) {
+        const x = currentPiece.x + col;
+        const y = currentPiece.y + row;
 
+        if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+          board[y][x] = currentPiece.color;
+        }
+      }
+    }
+  }
 }
 
 // ============================================================
@@ -325,10 +366,28 @@ function placePiece() {
 //    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
 // ============================================================
 function clearLines() {
-  // TODO: 여기에 구현하세요
+  let cleared = 0;
 
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r].every(cell => cell !== null)) {
+      board.splice(r, 1);
+      board.unshift(new Array(COLS).fill(null));
+      cleared++;
+      r++;
+    }
+  }
+
+  if (cleared > 0) {
+    const points = [0, 100, 300, 500, 800];
+
+    score += points[cleared] * level;
+    linesCleared += cleared;
+    level = Math.floor(linesCleared / 10) + 1;
+    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+
+    updateUI();
+  }
 }
-
 // ============================================================
 //  TODO 7: draw()
 //  ─────────────────────────────────────────────────────────
@@ -368,7 +427,29 @@ function draw() {
   //       if (board[r][c]) drawBlock(c, r, board[r][c]);
   //     }
   //   }
+  // TODO ②: board 고정 블록 그리기
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c]) {
+        drawBlock(c, r, board[r][c]);
+      }
+    }
+  }
 
+  // TODO ③: currentPiece 그리기
+  if (currentPiece) {
+    for (let row = 0; row < currentPiece.shape.length; row++) {
+      for (let col = 0; col < currentPiece.shape[row].length; col++) {
+        if (currentPiece.shape[row][col]) {
+          drawBlock(
+            currentPiece.x + col,
+            currentPiece.y + row,
+            currentPiece.color
+          );
+        }
+      }
+    }
+  }
   // TODO ③: currentPiece 그리기
   //   currentPiece.shape 의 값이 1인 칸을
   //   drawBlock(currentPiece.x + col, currentPiece.y + row, currentPiece.color) 로 그리기
